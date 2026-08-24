@@ -1,0 +1,10 @@
+# Optional crowd-prediction service. The Node API works fully without this —
+# it falls back to the deterministic rule engine whenever the service is
+# unreachable, slow, or simply not configured.
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pandas==2.2.3
+scikit-learn==1.6.1
+joblib==1.4.2
+numpy==2.2.1
+pydantic==2.10.4

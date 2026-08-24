@@ -1,0 +1,26 @@
+{
+  "name": "food-ai-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered food recommendation & smart restaurant discovery platform with an in-house crowd estimation engine",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "install:all": "npm install",
+    "seed": "npm run seed --workspace server",
+    "dev:server": "npm run dev --workspace server",
+    "dev:client": "npm run dev --workspace client",
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm:dev:server\" \"npm:dev:client\"",
+    "build": "npm run build --workspace client",
+    "start": "npm run start --workspace server",
+    "lint": "echo \"(no linter configured)\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

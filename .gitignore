@@ -1,0 +1,31 @@
+node_modules/
+dist/
+build/
+
+# Secrets — never commit. Only the *.example files belong in git.
+# A bare pattern matches at every level, so this covers server/.env too.
+.env
+.env.*
+!.env.example
+.dev.vars
+*.pem
+*.key
+
+# Cloudflare / Wrangler local state
+.wrangler/
+.mf/
+
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+# Local editor/agent settings — machine-specific absolute paths, not portable.
+.claude/
+coverage/
+ml/.venv/
+ml/__pycache__/
+ml/*.joblib
+ml/data/*.csv
+.cache/
