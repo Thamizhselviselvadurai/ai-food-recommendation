@@ -61,6 +61,19 @@ export async function request(path, { method = 'GET', body, params, signal, auth
 
   if (response.status === 204) return null;
 
+  // A static host serving the SPA answers unknown paths with index.html and a
+  // 200, so an unconfigured API base URL would look like a successful request
+  // that returned nothing. Check the type before trusting the status.
+  const contentType = response.headers.get('content-type') ?? '';
+  if (!contentType.includes('application/json')) {
+    throw new ApiError(
+      BASE_URL
+        ? 'The API returned an unexpected response. Check that VITE_API_BASE_URL points at the API.'
+        : 'The app is not connected to an API. Set VITE_API_BASE_URL to the deployed API origin and rebuild.',
+      { status: response.status },
+    );
+  }
+
   let payload = null;
   try {
     payload = await response.json();
