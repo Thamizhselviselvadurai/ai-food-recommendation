@@ -4,7 +4,7 @@ This repository is an npm-workspaces monorepo with **two deployable parts**:
 
 | Part | Path | What it is | Where it can run |
 | --- | --- | --- | --- |
-| Frontend | `client/` | Vite + React SPA (static files) | **Cloudflare Pages** |
+| Frontend | `client/` | Vite + React SPA (static files) | **Cloudflare Workers** (static assets) |
 | Backend | `server/` | Node + Express + Mongoose, long-running | **Not Cloudflare** — any Node host |
 | ML (optional) | `ml/` | Python crowd model service | Optional; app works without it |
 
@@ -25,8 +25,8 @@ being precise about:
 Porting the backend to Workers would mean replacing Express, replacing Mongoose,
 and replacing MongoDB. That is a rewrite, not a deployment. So:
 
-> **Cloudflare Pages hosts the frontend. The API is deployed separately to a
-> Node host, and the frontend is pointed at it.**
+> **Cloudflare hosts the frontend as a static-asset Worker. The API is deployed
+> separately to a Node host, and the frontend is pointed at it.**
 
 ---
 
@@ -62,7 +62,7 @@ Required:
 | --- | --- |
 | `MONGODB_URI` | Atlas connection string |
 | `JWT_SECRET` | Generate: `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"` |
-| `CLIENT_ORIGIN` | Your Pages URL. Comma-separated for several, e.g. `https://foodai.pages.dev,https://foodai.com` |
+| `CLIENT_ORIGIN` | Your Worker URL. Comma-separated for several, e.g. `https://food-ai-platform.workers.dev,https://foodai.com` |
 | `NODE_ENV` | `production` |
 
 Optional — the app degrades gracefully without every one of these:
@@ -83,30 +83,44 @@ Optional — the app degrades gracefully without every one of these:
 
 ---
 
-## 2. Frontend on Cloudflare Pages
+## 2. Frontend on Cloudflare Workers
 
 Connect the GitHub repository in the Cloudflare dashboard
-(**Workers & Pages → Create → Pages → Connect to Git**) and use:
+(**Workers & Pages → Create → Workers → Connect to Git**) and use:
 
 | Setting | Value |
 | --- | --- |
-| Framework preset | **Vite** |
-| Build command | `npm install && npm run build` |
-| Build output directory | `client/dist` |
-| Root directory | *(leave empty — repository root)* |
+| Project name | `food-ai-platform` |
+| Root directory | `/` *(repository root)* |
+| Build command | `npm run build` |
+| Deploy command | `npx wrangler deploy` |
 
-The root directory stays empty on purpose: this is an npm-workspaces monorepo,
-so the install must happen at the root for the workspace links to resolve. The
-root `build` script delegates to the client workspace.
+The root directory stays at the repository root on purpose: this is an
+npm-workspaces monorepo, so the install must happen at the root for the
+workspace links to resolve. The root `build` script delegates to the client
+workspace.
+
+Everything else lives in **`wrangler.jsonc` at the repository root** — the
+Worker name, the `compatibility_date`, and the `assets.directory` pointing at
+`./client/dist`. Keep the deploy command as a bare `npx wrangler deploy`: adding
+`--assets ./client/dist` on the command line conflicts with the `assets` block
+in the config file and wrangler will refuse to run.
+
+Because the config declares no `main` entry point, this deploys as a pure
+static-asset Worker — no JavaScript runs per request.
 
 ### Frontend environment variable
 
-Set this in **Pages → Settings → Environment variables**, for Production *and*
-Preview:
+Set this in **the Worker → Settings → Variables**, for Production *and*
+Preview. It is read at build time by Vite, so it must be set as a build
+variable:
 
 | Variable | Value |
 | --- | --- |
 | `VITE_API_BASE_URL` | Your deployed API origin, e.g. `https://foodai-api.onrender.com` — no trailing slash |
+
+The frontend throws on startup if this is unset in a production build, rather
+than silently issuing requests to its own origin and failing later.
 
 Optional map overrides: `VITE_MAP_TILE_URL`, `VITE_MAP_ATTRIBUTION`.
 
@@ -119,16 +133,22 @@ redeploy, not just a restart.
 
 ### SPA routing
 
-`client/public/_redirects` ships `/* /index.html 200`, so deep links such as
-`/near-me` and `/restaurant/:id` resolve instead of 404ing on refresh.
+`wrangler.jsonc` sets `assets.not_found_handling` to `single-page-application`,
+so deep links such as `/near-me` and `/restaurant/:id` serve `index.html`
+instead of 404ing on refresh.
+
+`client/public/_redirects` states the same intent with `/* /index.html 200`, but
+that proxying rewrite is a Pages-only feature — Workers ignores it. The file is
+kept as harmless documentation; the `not_found_handling` setting is what
+actually takes effect.
 
 ---
 
 ## 3. Connect the two
 
 1. Deploy the backend; note its URL.
-2. Set `VITE_API_BASE_URL` in Pages to that URL and deploy the frontend.
-3. Set `CLIENT_ORIGIN` on the backend to the Pages URL and restart it.
+2. Set `VITE_API_BASE_URL` on the Worker to that URL and deploy the frontend.
+3. Set `CLIENT_ORIGIN` on the backend to the Worker URL and restart it.
 
 Step 3 is what makes CORS pass. Skipping it is the usual cause of a deployed
 frontend that loads but whose every request fails.

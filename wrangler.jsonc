@@ -1,0 +1,47 @@
+/**
+ * Cloudflare Workers configuration — frontend only.
+ *
+ * This deploys the built Vite SPA in `client/dist` as a static-asset Worker.
+ * There is no `main` entry point on purpose: with only `assets` configured,
+ * Cloudflare serves the files directly from its asset store and no Worker
+ * script runs, which is both cheaper and faster than routing every request
+ * through JavaScript.
+ *
+ * The Express API in `server/` is NOT deployed here — it needs Node and a
+ * MongoDB TCP connection, neither of which exists on Workers. See
+ * DEPLOYMENT.md for why, and point `VITE_API_BASE_URL` at the Node host that
+ * runs it.
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  // Must match the Workers Builds project name, or CI refuses to deploy with
+  // "Failed to match Worker name".
+  "name": "food-ai-platform",
+
+  // Required by `wrangler deploy`. Pins the runtime's behaviour to the
+  // semantics of this date so a future platform change cannot silently alter
+  // how the deployment behaves.
+  "compatibility_date": "2026-08-27",
+
+  "assets": {
+    // Relative to this file, so the deploy works from the repository root —
+    // which is what `npm run build` (root script → client workspace) produces.
+    "directory": "./client/dist",
+
+    /**
+     * React Router owns paths like /decide, /near-me and /restaurant/:id that
+     * have no file on disk. This serves index.html for those instead of a 404,
+     * so deep links and refreshes work.
+     *
+     * `client/public/_redirects` expresses the same intent, but its `/* /index.html 200`
+     * rewrite is a Pages-only feature — Workers ignores proxying redirects.
+     * This setting is the Workers equivalent and is what actually takes effect.
+     */
+    "not_found_handling": "single-page-application"
+  },
+
+  "observability": {
+    "enabled": true
+  }
+}
