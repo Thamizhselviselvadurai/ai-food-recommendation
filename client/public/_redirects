@@ -1,9 +1,0 @@
-# Single-page app fallback.
-#
-# React Router owns every path (/decide, /near-me, /restaurant/:id, …), but those
-# files do not exist on disk. Without this rule a visitor who opens a deep link
-# or refreshes any page other than "/" gets a 404 from the CDN.
-#
-# The 200 status makes it a rewrite, not a redirect, so the URL the user sees is
-# preserved and the router can read it.
-/*    /index.html   200
