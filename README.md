@@ -38,7 +38,7 @@ factor breakdown. No feature disappears.
 
 ## Quick start
 
-**Prerequisites:** Node 18.18+, and MongoDB (local, Atlas, or the zero-install
+**Prerequisites:** Node 22+, and MongoDB (local, Atlas, or the zero-install
 in-memory mode below).
 
 ```bash

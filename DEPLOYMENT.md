@@ -41,7 +41,7 @@ Any Node host works — Render, Railway, Fly.io, a VPS. Settings:
 | Root directory | `server` |
 | Build command | `npm install` |
 | Start command | `npm start` |
-| Node version | 20.x (see `.node-version`) |
+| Node version | 22.x (see `.node-version`) |
 
 ### Database
 
@@ -99,6 +99,10 @@ The root directory stays at the repository root on purpose: this is an
 npm-workspaces monorepo, so the install must happen at the root for the
 workspace links to resolve. The root `build` script delegates to the client
 workspace.
+
+The build image's Node version comes from **`.node-version`** (22.x). It cannot
+go lower: wrangler 4.x declares `engines: { node: ">=22.0.0" }`, so a Node 20
+build image fails at the deploy step even though `npm run build` succeeds.
 
 Everything else lives in **`wrangler.jsonc` at the repository root** — the
 Worker name, the `compatibility_date`, and the `assets.directory` pointing at
